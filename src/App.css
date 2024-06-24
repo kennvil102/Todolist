@@ -1,0 +1,27 @@
+.todo-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+ }
+ .todo-item p {
+  color:black;
+  
+   
+ }
+ .shape{
+   
+  background-color:teal;
+  border-radius: 10px;
+  width: 200px;
+ }
+ .todo-list{
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  width: 200px;
+ }
+ .mover{
+  position: absolute;
+  left: 45%;
+ }
