@@ -10,7 +10,7 @@
  }
  .shape{
    
-  background-color:teal;
+  background-color:rgb(10, 137, 137);
   border-radius: 10px;
   width: 200px;
  }
@@ -21,7 +21,16 @@
   text-align: center;
   width: 200px;
  }
- .mover{
-  position: absolute;
-  left: 45%;
- }
+ .App {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+}
+
+ 
+
+  
+
+
+ 

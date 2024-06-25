@@ -1,90 +1,91 @@
-import React, { useState } from 'react';
-import Todoitem from './TodoItem'; // Importa el componente TodoItem
+import React, { useState, useEffect } from 'react'; // importamos react y los hooks useState y useEffect
+import TodoItem from './TodoItem'; // importamos el componente TodoItem
 
-function Todolist() {
-  // Estado para almacenar la lista de tareas
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      text: 'cita',
-      completed: true,
-    },
-    {
-      id: 2,
-      text: 'reunion',
-      completed: false,
-    },
-  ]);
+function TodoList() {
+  const [tasks, setTasks] = useState([]); // estado para almacenar la lista de tareas, inicia vacio
+  const [completedCount, setCompletedCount] = useState(0); // estado para almacenar la cantidad de tareas completadas, inicia en 0
 
-  // Estado para almacenar el texto de la nueva tarea
-  const [text, setText] = useState('');
+  // funcion para actualizar el contador de tareas completadas
+  const updateCompletedCount = (tasks) => {
+    setCompletedCount(tasks.filter(task => task.completed).length); // actualiza el contador filtrando las tareas completadas
+  };
 
-  // Estado para almacenar la cantidad de tareas completadas
-  const [completedCount, setCompletedCount] = useState(
-    tasks.filter(task => task.completed).length
-  );
+  // useEffect para cargar las tareas iniciales desde el servidor
+  useEffect(() => {
+    fetch('http://localhost:3000/tasks') // hace una solicitud GET al servidor para obtener las tareas
+      .then(response => response.json()) // convierte la respuesta a formato JSON
+      .then(data => {
+        setTasks(data); // establece las tareas obtenidas en el estado
+        updateCompletedCount(data); // actualiza el contador de tareas completadas
+      });
+  }, []); // el array vacio asegura que este efecto se ejecute solo una vez al montar el componente
 
   // funcion para agregar una nueva tarea
-  function addTask(text) {
-    // Crea una nueva tarea con un ID único basado en la fecha actual
-    const newTask = {
-      id: Date.now(),
-      text,
-      completed: false,
-    };
-    // Actualiza el estado de las tareas agregando la nueva tarea al final de la lista
-    setTasks([...tasks, newTask]);
-    // Limpia el campo de texto para la nueva tarea
-    setText('');
-  }
+  const addTask = text => {
+    fetch('http://localhost:3000/tasks', {
+      method: 'POST', // metodo POST para agregar una nueva tarea
+      headers: {
+        'Content-Type': 'application/json', // tipo de contenido JSON
+      },
+      body: JSON.stringify({ text, completed: false }), // cuerpo de la solicitud con el texto de la tarea y su estado de completado
+    })
+      .then(response => response.json()) // convierte la respuesta a formato JSON
+      .then(data => {
+        const newTasks = [...tasks, data]; // agrega la nueva tarea a la lista de tareas
+        setTasks(newTasks); // actualiza el estado de las tareas
+        updateCompletedCount(newTasks); // actualiza el contador de tareas completadas
+      });
+  };
 
-  // Función para eliminar una tarea
-  function deleteTask(id) {
-    // Filtra las tareas para excluir la tarea con el ID proporcionado
-    setTasks(tasks.filter(task => task.id !== id));
-  }
-
-  // Función para marcar una tarea como completada o no completada
-  function toggleCompleted(id) {
-    // Mapea sobre las tareas para encontrar la tarea con el ID proporcionado
-    const updatedTasks = tasks.map(task => {
-      if (task.id === id) {
-        // Si la tarea actual es la que queremos cambiar, se crea una copia de la tarea con el estado de completado invertido
-        return { ...task, completed: !task.completed };
-      } else {
-        // Si la tarea actual no es la que queremos cambiar, se devuelve la tarea sin modificar
-        return task;
-      }
+  // funcion para eliminar una tarea
+  const deleteTask = id => {
+    fetch(`http://localhost:3000/tasks/${id}`, {
+      method: 'DELETE', // metodo DELETE para eliminar una tarea
+    }).then(() => {
+      const updatedTasks = tasks.filter(task => task.id !== id); // filtra la lista de tareas excluyendo la tarea eliminada
+      setTasks(updatedTasks); // actualiza el estado de las tareas
+      updateCompletedCount(updatedTasks); // actualiza el contador de tareas completadas
     });
-    // Actualiza el estado de las tareas con la lista actualizada
-    setTasks(updatedTasks);
-    // Actualiza el estado de la cantidad de tareas completadas contando las tareas con completed:true
-    setCompletedCount(updatedTasks.filter(task => task.completed).length);
-  }
+  };
 
-  // Renderiza el componente Todolist
+  // funcion para marcar una tarea como completada o no completada
+  const toggleCompleted = id => {
+    const updatedTasks = tasks.map(task =>
+      task.id === id ? { ...task, completed: !task.completed } : task // invierte el estado de completado de la tarea correspondiente
+    );
+
+    fetch(`http://localhost:3000/tasks/${id}`, {
+      method: 'PUT', // metodo PUT para actualizar una tarea
+      headers: {
+        'Content-Type': 'application/json', // tipo de contenido JSON
+      },
+      body: JSON.stringify(updatedTasks.find(task => task.id === id)), // cuerpo de la solicitud con la tarea actualizada
+    }).then(() => {
+      setTasks(updatedTasks); // actualiza el estado de las tareas
+      updateCompletedCount(updatedTasks); // actualiza el contador de tareas completadas
+    });
+  };
+
   return (
-    <div className='mover'>
-      <div className="todo-list">
-        {/* Muestra la cantidad de tareas completadas */}
-        <h2 className='shape'>Tareas Completadas: {completedCount}</h2>
-        {/* Mapea cada tarea a un componente Todoitem */}
-        {tasks.map(task => (
-          <Todoitem
-            key={task.id}
-            task={task}
-            deleteTask={deleteTask}
-            toggleCompleted={toggleCompleted}
-          />
-        ))}
-        {/* Input para agregar una nueva tarea */}
-        <input value={text} onChange={e => setText(e.target.value)} />
-        {/* Botón para agregar una nueva tarea */}
-        <button onClick={() => addTask(text)}>Agregar</button>
-      </div>
+    <div className="todo-list">
+      <h2 className='shape'>tareas completadas: {completedCount}</h2> {/* muestra la cantidad de tareas completadas */}
+      {tasks.map(task => (
+        <TodoItem
+          key={task.id} // clave  para cada tarea
+          task={task} // pasa la tarea como propiedad
+          deleteTask={deleteTask} // pasa la funcion deleteTask como propiedad
+          toggleCompleted={toggleCompleted} // pasa la funcion toggleCompleted como propiedad
+        />
+      ))}
+      <input
+        type="text" // campo de entrada para texto
+        placeholder="nueva tarea" // texto de marcador de posicion
+        onKeyPress={e => {
+          if (e.key === 'Enter') addTask(e.target.value); // agrega una nueva tarea cuando se presiona Enter
+        }}
+      />
     </div>
   );
 }
 
-// Exporta el componente Todolist para ser utilizado en otros componentes
-export default Todolist;
+export default TodoList; // exporta el componente TodoList
